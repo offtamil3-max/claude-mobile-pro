@@ -15,6 +15,7 @@ The generated artifact is named `claude-mobile-pro-debug-apk`.
 - GitHub OAuth bridge and repository listing
 - Mobile-first dark UI
 - Android WebView shell
+- HTTPS appassets origin for Puter.js compatibility
 
 ## Limitations
 This is a working foundation. Full GitHub CRUD, deployment adapters, sandboxed third-party plugin execution, native attachment capture, and a full code editor still need dedicated implementation.
