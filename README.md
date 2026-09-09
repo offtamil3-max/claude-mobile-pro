@@ -9,6 +9,7 @@ GitHub Actions builds an installable debug APK automatically on pushes to `main`
 The generated artifact is named `claude-mobile-pro-debug-apk`.
 
 ## Features
+- Claude-style mobile home screen and composer
 - Puter.js Claude chat with streaming
 - Model selector
 - Local chats/projects/plugins/checkpoints
