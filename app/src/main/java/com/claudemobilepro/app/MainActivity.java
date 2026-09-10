@@ -90,10 +90,9 @@ public class MainActivity extends Activity {
       "var input=document.getElementById('file'),last=Array.isArray(messages)?messages[messages.length-1]:null;"+
       "if(input&&input.files&&input.files.length&&last&&last.role==='user'&&puter.fs&&puter.fs.upload){"+
       "var existing=Array.isArray(last.content)&&last.content.some(function(x){return x&&x.type==='file'&&x.puter_path;});"+
-      "if(!existing){var uploaded=await puter.fs.upload(Array.from(input.files));var files=Array.isArray(uploaded)?uploaded:[uploaded];"+
-      "var copy=messages.map(function(m){return Object.assign({},m);});last=copy[copy.length-1];var parts=[];"+
+      "if(!existing){var uploaded=await puter.fs.upload(Array.from(input.files));var files=Array.isArray(uploaded)?uploaded:[uploaded];var parts=[];"+
       "if(typeof last.content==='string'&&last.content.trim())parts.push({type:'text',text:last.content});"+
-      "files.forEach(function(f){if(f&&f.path)parts.push({type:'file',puter_path:f.path});});last.content=parts;messages=copy;}"+
+      "files.forEach(function(f){if(f&&f.path)parts.push({type:'file',puter_path:f.path});});last.content=parts;}"+
       "}var result=await originalChat(messages,testMode,options);if(input&&input.files&&input.files.length)input.value='';return result;};}}catch(e){console.warn('Reliability patch:',e);}"+
       "})();";
     view.evaluateJavascript(js, null);
