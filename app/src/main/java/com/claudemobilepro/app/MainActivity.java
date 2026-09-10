@@ -38,8 +38,13 @@ public class MainActivity extends Activity {
       @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) { return loadAsset(request.getUrl().toString()); }
       @Override public WebResourceResponse shouldInterceptRequest(WebView view, String url) { return loadAsset(url); }
       @Override public boolean shouldOverrideUrlLoading(WebView v, String u) {
-        if (u.startsWith("http://") || u.startsWith("https://")) { v.loadUrl(u); return true; }
+        // Keep normal HTTPS navigation under WebView control. Intercept only the app callback scheme.
+        if (u.startsWith("claudemobilepro://")) { handleIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(u))); return true; }
         return false;
+      }
+      @Override public void onPageFinished(WebView view, String url) {
+        super.onPageFinished(view, url);
+        injectReliabilityPatch(view);
       }
     });
 
@@ -78,6 +83,20 @@ public class MainActivity extends Activity {
       else if (path.endsWith(".svg")) mime = "image/svg+xml";
       return new WebResourceResponse(mime, "UTF-8", in);
     } catch (IOException e) { return null; }
+  }
+
+  private void injectReliabilityPatch(WebView view) {
+    String js = "(function(){if(window.__cmpReliabilityPatch)return;window.__cmpReliabilityPatch=true;"+
+      "try{if(window.puter&&puter.ai&&puter.ai.chat){var originalChat=puter.ai.chat.bind(puter.ai);puter.ai.chat=async function(messages,testMode,options){"+
+      "var input=document.getElementById('file');"+
+      "if(input&&input.files&&input.files.length&&Array.isArray(messages)&&puter.fs&&puter.fs.upload){"+
+      "var uploaded=await puter.fs.upload(Array.from(input.files));var files=Array.isArray(uploaded)?uploaded:[uploaded];"+
+      "var copy=messages.map(function(m){return Object.assign({},m);});var last=copy[copy.length-1];"+
+      "if(last&&last.role==='user'){var parts=[];if(typeof last.content==='string'&&last.content.trim())parts.push({type:'text',text:last.content});"+
+      "files.forEach(function(f){if(f&&f.path)parts.push({type:'file',puter_path:f.path});});last.content=parts;messages=copy;}input.value='';}"+
+      "return originalChat(messages,testMode,options);};}}catch(e){console.warn('Reliability patch:',e);}"+
+      "})();";
+    view.evaluateJavascript(js, null);
   }
 
   @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
