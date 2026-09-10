@@ -33,6 +33,11 @@ public class MainActivity extends Activity {
     s.setMediaPlaybackRequiresUserGesture(false);
     s.setBuiltInZoomControls(false);
     s.setDisplayZoomControls(false);
+    s.setJavaScriptCanOpenWindowsAutomatically(true);
+
+    CookieManager cm = CookieManager.getInstance();
+    cm.setAcceptCookie(true);
+    if (Build.VERSION.SDK_INT >= 21) cm.setAcceptThirdPartyCookies(web, true);
 
     web.setWebViewClient(new WebViewClient() {
       @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) { return loadAsset(request.getUrl().toString()); }
@@ -41,7 +46,10 @@ public class MainActivity extends Activity {
         if (u.startsWith("claudemobilepro://")) { handleIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(u))); return true; }
         return false;
       }
-      @Override public void onPageFinished(WebView view, String url) { super.onPageFinished(view, url); }
+      @Override public void onPageFinished(WebView view, String url) {
+        super.onPageFinished(view, url);
+        injectReliabilityPatch(view);
+      }
     });
 
     web.setWebChromeClient(new WebChromeClient() {
@@ -93,6 +101,22 @@ public class MainActivity extends Activity {
       else if (path.endsWith(".svg")) mime = "image/svg+xml";
       return new WebResourceResponse(mime, "UTF-8", in);
     } catch (IOException e) { return null; }
+  }
+
+  private void injectReliabilityPatch(WebView view) {
+    String js = "(function(){if(window.__cmpReliabilityPatch)return;window.__cmpReliabilityPatch=true;"+
+      "try{if(window.puter&&puter.ai&&puter.ai.chat){var originalChat=puter.ai.chat.bind(puter.ai);puter.ai.chat=async function(messages,testMode,options){"+
+      "var input=document.getElementById('file'),last=Array.isArray(messages)?messages[messages.length-1]:null;"+
+      "if(input&&input.files&&input.files.length&&last&&last.role==='user'&&puter.fs&&puter.fs.upload){"+
+      "var existing=Array.isArray(last.content)&&last.content.some(function(x){return x&&x.type==='file'&&x.puter_path;});"+
+      "if(!existing){var uploaded=await puter.fs.upload(Array.from(input.files));var files=Array.isArray(uploaded)?uploaded:[uploaded];var parts=[];"+
+      "if(typeof last.content==='string'&&last.content.trim())parts.push({type:'text',text:last.content});"+
+      "files.forEach(function(f){if(f&&f.path)parts.push({type:'file',puter_path:f.path});});last.content=parts;}"+
+      "}var result=await originalChat(messages,testMode,options);if(input&&input.files&&input.files.length)input.value='';return result;};}"+
+      "if(typeof window.ensurePuter==='function'){window.ensurePuter=async function(){if(typeof puter==='undefined'||!puter.ai||typeof puter.ai.chat!=='function')throw new Error('Puter AI SDK did not load. Check internet connection.');}}"+
+      "}catch(e){console.warn('Reliability patch:',e);}"+
+      "})();";
+    view.evaluateJavascript(js, null);
   }
 
   @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
